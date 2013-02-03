@@ -77,7 +77,7 @@ def check_request(request, key):
     reqmac = auth['mac']
     norm = normalize_request(request)   
 
-    mac = hmac.new(key, norm, sha256)
+    mac = hmac.new(key.encode('ascii'), norm.encode('ascii'), sha256)
 
     macstr = base64.encodestring(mac.digest())
     return reqmac == macstr
@@ -111,9 +111,13 @@ def require_authorization(func):
 
             #try and find a keypair for the given mac id
             keypairs = KeyPair.objects.filter(mac_id=auth['id'])
+
             
             if( len(keypairs)  < 1):
-                return authenticate_response()    
+                return authenticate_response()   
+
+            if not check_request(request, keypairs[0].mac_key):
+                return authenticate_response()
 
             return func(*args, **kwargs)
     return wrapped
