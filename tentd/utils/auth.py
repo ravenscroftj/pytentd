@@ -112,8 +112,8 @@ def require_authorization(func):
             #try and find a keypair for the given mac id
             keypairs = KeyPair.objects.filter(mac_id=auth['id'])
             
-            #if( len(keypairs) < 0):
-                
+            if( len(keypairs)  < 1):
+                return authenticate_response()    
 
             return func(*args, **kwargs)
     return wrapped

@@ -13,6 +13,10 @@ from werkzeug.datastructures import Headers
 
 from tentd import create_app
 from tentd.documents import *
+
+from tentd.utils.auth import generate_keypair
+from tentd.documents.auth import KeyPair
+
 from tentd.tests.mocking import MockFunction
 
 class TestResponse(Response):
@@ -43,8 +47,12 @@ class AuthorizedClientWrapper:
 
     @property
     def auth_header(self):
+
+        #TODO: normalize the request, generate a MAC code
+        mac = "blah"
+
         return 'MAC id="{0}",ts="{1}",nonce="{2}",mac="{3}"'.format(
-            self.macid, self.tstamp, self.nonce, self.mac)
+            self.keypair.mac_id, self.tstamp, self.nonce, mac)
 
     def get(self, *args, **kwargs):
         return self._exec(self._client.get, *args, **kwargs)
@@ -64,6 +72,8 @@ class AuthorizedClientWrapper:
     def _exec(self, method, *args, **kwargs):
     
         h = Headers()
+
+        print args[0]
 
         if(kwargs.has_key('headers')):
             h.extend(kwargs['headers'])
@@ -110,6 +120,13 @@ class TentdTestCase(TestCase):
 
         #set up authorized client
         cls.secure_client = AuthorizedClientWrapper(cls.client)
+        
+        keyid,key = generate_keypair()
+        kp = KeyPair(mac_id=keyid, mac_key=key,
+                        mac_algorithm="hmac-sha-256")
+        kp.save()
+
+        cls.secure_client.keypair = kp
 
         cls.clear_database()
         
